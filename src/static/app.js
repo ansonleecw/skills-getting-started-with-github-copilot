@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Clear and re-add default option to select to avoid duplicates
+      activitySelect.innerHTML = `<option value="">-- Select an activity --</option>`;
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -20,11 +23,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build participants markup
+        let participantsHTML = "";
+        if (details.participants && details.participants.length > 0) {
+          const items = details.participants
+            .map(
+              (p) => `<li><span class="avatar">${(p.split('@')[0] || p).charAt(0).toUpperCase()}</span><span class="participant-email">${p}</span></li>`
+            )
+            .join("");
+          participantsHTML = `
+            <div class="participants">
+              <strong>Participants:</strong>
+              <ul>${items}</ul>
+            </div>
+          `;
+        } else {
+          participantsHTML = `
+            <div class="participants no-participants">
+              <strong>Participants:</strong>
+              <div class="empty">No participants yet — be the first!</div>
+            </div>
+          `;
+        }
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          ${participantsHTML}
         `;
 
         activitiesList.appendChild(activityCard);
@@ -60,11 +87,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         messageDiv.textContent = result.message;
-        messageDiv.className = "success";
+        messageDiv.className = "message success";
         signupForm.reset();
+
+        // Refresh activities so participants list updates immediately
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        messageDiv.className = "message error";
       }
 
       messageDiv.classList.remove("hidden");
@@ -75,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 5000);
     } catch (error) {
       messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
+      messageDiv.className = "message error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
     }
