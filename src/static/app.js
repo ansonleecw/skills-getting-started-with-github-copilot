@@ -23,12 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Build participants markup
+        // Build participants markup with delete icon
         let participantsHTML = "";
         if (details.participants && details.participants.length > 0) {
           const items = details.participants
             .map(
-              (p) => `<li><span class="avatar">${(p.split('@')[0] || p).charAt(0).toUpperCase()}</span><span class="participant-email">${p}</span></li>`
+              (p) => `<li><span class="avatar">${(p.split('@')[0] || p).charAt(0).toUpperCase()}</span><span class="participant-email">${p}</span><button class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${p}">&#128465;</button></li>`
             )
             .join("");
           participantsHTML = `
@@ -92,6 +92,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Refresh activities so participants list updates immediately
         fetchActivities();
+  // Delegate click event for delete buttons
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.getAttribute("data-activity");
+      const email = event.target.getAttribute("data-email");
+      if (confirm(`Remove ${email} from ${activity}?`)) {
+        try {
+          const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+            method: "POST"
+          });
+          const result = await response.json();
+          if (response.ok) {
+            fetchActivities();
+          } else {
+            alert(result.detail || "Failed to remove participant.");
+          }
+        } catch (error) {
+          alert("Error removing participant.");
+        }
+      }
+    }
+  });
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "message error";
